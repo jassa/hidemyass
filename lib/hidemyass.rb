@@ -1,13 +1,14 @@
-require 'nokogiri'
 require 'open-uri'
 require 'faraday'
+require 'net/http'
+require 'nokogiri'
 require 'hidemyass/version'
+require 'hidemyass/ip'
 require 'hidemyass/http'
 require 'hidemyass/logger'
-require 'logger'
+require 'hidemyass/railtie' if defined?(Rails)
 
-
-module Hidemyass
+module HideMyAss
   extend Logger
 
   HTTP_ERRORS = [
@@ -19,11 +20,16 @@ module Hidemyass
     Net::HTTPHeaderSyntaxError,
     Net::ProtocolError
   ]
-                 
+
+  SITE = "http://hidemyass.com".freeze
+  # TODO: Find a way to get ideal results in the custom search
+  ENDPOINT = "http://hidemyass.com/proxy-list/search-768392".freeze
+              
   def self.options
     @options ||= {
-     :log => true,
-     :local => false
+      log: true,
+      local: false,
+      clear_cache: false
     }
   end
 
@@ -37,7 +43,7 @@ module Hidemyass
   end
 
   def self.proxies
-    @proxies ||= load_proxy_from_web("http://hidemyass/proxy-list/search-226094")
+    @proxies ||= load_proxy_from_web(ENDPOINT)
   end
 
   def self.load_proxy_from_file(path)
@@ -54,6 +60,9 @@ module Hidemyass
     dom = Nokogiri::HTML(open(uri))
     return dom.xpath('//table[@id="listtable"]/tr').collect do |node|
       { port: node.at_xpath('td[3]').content.strip, host: node.at_xpath('td[2]/span').xpath('text() | *[not(contains(@style,"display:none"))]').map(&:content).compact.join.to_s }
-    end
+  end
+    
+  def self.clear_cache
+    @proxies = nil
   end
 end

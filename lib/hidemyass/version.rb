@@ -1,3 +1,3 @@
-module Hidemyass
-  VERSION = "0.1.0"
+module HideMyAss
+  VERSION = "0.1.2.1"
 end
