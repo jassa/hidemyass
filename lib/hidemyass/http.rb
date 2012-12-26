@@ -9,6 +9,8 @@ module HideMyAss
         proxy = self.random_proxy
         self.log "Proxy #{proxy[:host]}:#{proxy[:port]}"
         return Faraday.new proxy: "http://#{proxy[:host]}:#{proxy[:port]}"
+      end
+    end
 
     def self.start(address, *arg, &block)
       HideMyAss.log 'Connecting to ' + address + ' through:'

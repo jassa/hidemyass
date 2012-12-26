@@ -60,6 +60,7 @@ module HideMyAss
     dom = Nokogiri::HTML(open(uri))
     return dom.xpath('//table[@id="listtable"]/tr').collect do |node|
       { port: node.at_xpath('td[3]').content.strip, host: node.at_xpath('td[2]/span').xpath('text() | *[not(contains(@style,"display:none"))]').map(&:content).compact.join.to_s }
+    end
   end
     
   def self.clear_cache
