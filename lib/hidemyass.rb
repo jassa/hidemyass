@@ -33,13 +33,23 @@ module HideMyAss
     }
   end
 
+  def self.set_option(name, value)
+    options = self.options
+    options[name] = value unless options[name].nil?
+  end
+
+
   def self.load_proxy_from(source, address)
     case source
     when :web
-      load_proxy_from_web(address)
+      @proxies = load_proxy_from_web(address)
     when :file
-      load_proxy_from_file(address)
+      @proxies = load_proxy_from_file(address)
     end
+  end
+
+  def self.random_proxy
+    self.proxies.sample
   end
 
   def self.proxies
@@ -47,19 +57,24 @@ module HideMyAss
   end
 
   def self.load_proxy_from_file(path)
-    data = File.read(@@path)
-    proxies = data.split("\n").map do |d|
+    data = File.read(path)
+    p = data.split("\n").map do |d|
       u = d.split(":")
       {host: u[0], port: u[1]}
     end
-    return proxies
+    return p
   end
 
   def self.load_proxy_from_web(address)
-    uri = URI.parse(address)
-    dom = Nokogiri::HTML(open(uri))
-    return dom.xpath('//table[@id="listtable"]/tr').collect do |node|
-      { port: node.at_xpath('td[3]').content.strip, host: node.at_xpath('td[2]/span').xpath('text() | *[not(contains(@style,"display:none"))]').map(&:content).compact.join.to_s }
+    html = Nokogiri::HTML(open(URI.parse(address)))
+
+    return html.xpath('//table[@id="listtable"]/tr').collect do |node|
+      ip = HideMyAss::IP.new(node.at_xpath('td[2]/span'))
+      next unless ip.valid?
+      { 
+        host: ip.address,
+        port: node.at_xpath('td[3]').content.strip
+      }
     end
   end
     
