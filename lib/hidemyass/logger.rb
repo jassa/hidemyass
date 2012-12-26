@@ -3,7 +3,7 @@ require 'logger'
 module HideMyAss
   module Logger
     def log(message)
-      logger.info("#{LOG_PREFIX} #{message}") if logging?
+      logger.info("#{message}") if logging?
     end
 
     def logger #:nodoc:

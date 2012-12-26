@@ -1,6 +1,18 @@
 module HideMyAss
   module HTTP
-    def HTTP.start(address, *arg, &block)
+
+    def self.new_connection
+      if HideMyAss.options[:local]
+        HideMyAss.log "No Proxy"
+        return Faraday.new
+      else
+        proxy = HideMyAss.random_proxy
+        HideMyAss.log "Proxy #{proxy[:host]}:#{proxy[:port]}"
+        return Faraday.new proxy: "http://#{proxy[:host]}:#{proxy[:port]}"
+      end
+    end
+
+    def self.start(address, *arg, &block)
       HideMyAss.log 'Connecting to ' + address + ' through:'
       response = nil
   
@@ -28,8 +40,7 @@ module HideMyAss
           HideMyAss.log error
         end
       end
-
-      response
     end
+
   end
 end
