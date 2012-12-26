@@ -1,41 +1,59 @@
 require 'nokogiri'
 require 'open-uri'
-require 'net/http'
+require 'faraday'
 require 'hidemyass/version'
 require 'hidemyass/http'
 require 'hidemyass/logger'
-require 'hidemyass/railtie'
 require 'logger'
+
 
 module Hidemyass
   extend Logger
 
-  HOST = 'hidemyass.com'
-  LOG_PREFIX = '** [hidemyass] '
-
-  HTTP_ERRORS = [Timeout::Error,
-                 Errno::EINVAL,
-                 Errno::ECONNRESET,
-                 EOFError,
-                 Net::HTTPBadResponse,
-                 Net::HTTPHeaderSyntaxError,
-                 Net::ProtocolError]
+  HTTP_ERRORS = [
+    Timeout::Error,
+    Errno::EINVAL,
+    Errno::ECONNRESET,
+    EOFError,
+    Net::HTTPBadResponse,
+    Net::HTTPHeaderSyntaxError,
+    Net::ProtocolError
+  ]
                  
-   def self.options
-     @options ||= {
-       :log => true,
-       :local => false
-     }
-   end
+  def self.options
+    @options ||= {
+     :log => true,
+     :local => false
+    }
+  end
+
+  def self.load_proxy_from(source, address)
+    case source
+    when :web
+      load_proxy_from_web(address)
+    when :file
+      load_proxy_from_file(address)
+    end
+  end
 
   def self.proxies
-    uri = URI.parse('http://%s/proxy-list/search-226094' % HOST)
-    dom = Nokogiri::HTML(open(uri))
+    @proxies ||= load_proxy_from_web("http://hidemyass/proxy-list/search-226094")
+  end
 
-    @proxies ||= dom.xpath('//table[@id="listtable"]/tr').collect do |node|
-      { port: node.at_xpath('td[3]').content.strip,
-        host: node.at_xpath('td[2]/span').xpath('text() | *[not(contains(@style,"display:none"))]').
-                map(&:content).compact.join.to_s }
+  def self.load_proxy_from_file(path)
+    data = File.read(@@path)
+    proxies = data.split("\n").map do |d|
+      u = d.split(":")
+      {host: u[0], port: u[1]}
+    end
+    return proxies
+  end
+
+  def self.load_proxy_from_web(address)
+    uri = URI.parse(address)
+    dom = Nokogiri::HTML(open(uri))
+    return dom.xpath('//table[@id="listtable"]/tr').collect do |node|
+      { port: node.at_xpath('td[3]').content.strip, host: node.at_xpath('td[2]/span').xpath('text() | *[not(contains(@style,"display:none"))]').map(&:content).compact.join.to_s }
     end
   end
 end
