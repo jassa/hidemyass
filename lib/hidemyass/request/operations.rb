@@ -19,10 +19,12 @@ module HideMyAss
           # Pass request to Typhoeus
           request = Typhoeus::Request.new(base_url, options)
           request.on_complete do |response|
-            HideMyAss.log "#{request.options[:proxy]} : #{response.code}"
+            HideMyAss.log "#{request.options[:proxy]} : #{response.code} #{response.return_code}"
+            has_success_response_code = (200..300).member?(response.code)
+            is_aborted_get = (response.code == 200) && (response.return_code.try(:to_s) != 'ok')
 
             # Return on successful http code
-            if (200..300).member?(response.code)
+            if has_success_response_code && !is_aborted_get
               @response = response and HideMyAss.hydra.abort
             end
           end
